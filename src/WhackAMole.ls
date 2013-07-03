@@ -1,32 +1,50 @@
 package
 {
-    import cocos2d.Cocos2DGame;
-    import cocos2d.CCSprite;
-    import cocos2d.CCPoint;
-    import cocos2d.ScaleMode;
+    import loom.Application;    
+    import loom.platform.Timer;
+    import loom.animation.Tween;
+    import loom.animation.EaseType;
+    import loom2d.display.StageScaleMode;
+    import loom2d.display.Image;        
+    import loom2d.textures.Texture;
+    import loom2d.ui.Label;
+    import loom2d.events.KeyboardEvent;
+    import loom.platform.LoomKey;
     import cocos2d.Cocos2D;
 
-    import UI.Label;
+    import cocosdenshion.SimpleAudioEngine;
 
-    import Loom.Animation.Tween;
-    import Loom.Animation.EaseType;
-    import Loom.Platform.Timer;
+    import loom2d.events.TouchEvent;
+    import loom2d.events.TouchPhase;
 
-    import Loom.Platform.LoomKey;
+    import system.Process;
 
-    import CocosDenshion.SimpleAudioEngine;
-
-    import System.Process;
-
-    public class WhackAMole extends Cocos2DGame
+    public class WhackAMole extends Application
     {
+        // Duration of a single game.
         protected const GAME_TIME_SECS = 30;
+
+        // Max number of strikes (misses) allowed.
         protected const MAX_STRIKES = 3;
+
+        // Number of points for a hit.
         protected const HIT_POINTS = 100;
+
+        // Number of points for a miss.
         protected const MISS_POINTS = 5;
 
+        // Amount of time that a mole initially remains up for (seconds).
+        // This reduces as moles are whacked during the game.
+        protected const INITIAL_MOLE_UP_TIME = 2.5;
+
+        // Amount of time between timer ticks (seconds).
+        // This reduces as moles are whacked during the game.
+        // On each timer tick a decision is made whether to
+        // pop up each of the moles.
+        protected const INITIAL_TIMER_PERIOD = 1.0;
+
         protected var timer:Timer;
-        protected var moles:Vector.<CCSprite>;
+        protected var moles:Vector.<Image>;
         protected var moleStates:Vector.<Boolean>;
         protected var scores:Vector.<Label>;
         protected var misses:Vector.<Label>;
@@ -34,123 +52,153 @@ package
         protected var totalScore:Label;
         protected var total:Number;
         protected var strikes:Number;
-        protected var retryButton:CCSprite;
+        protected var gameOverLabel:Image;
         protected var timeLabel:Label;
         protected var gameTimer:Timer;
         protected var timeLastHealthWarning:Number;
+        protected var moleUpY:Number;
+        protected var moleDownY:Number;
+        protected var missY:Number;
+        protected var scoreY:Number;
 
         override public function run():void
         {
-            super.run();
+            stage.scaleMode = StageScaleMode.FILL;
 
-            layer.scaleMode = ScaleMode.LETTERBOX;
-
-            waitTime = 2.5;
+            var screenWidth = stage.stageWidth;
+            var screenHeight = stage.stageHeight;            
+         
+            waitTime = INITIAL_MOLE_UP_TIME;
             strikes = 0;
             timeLastHealthWarning = 0;
 
-            var ground = CCSprite.createFromFile("assets/background/bg_dirt.png");
-            ground.x = layer.designWidth/2;
-            ground.y = layer.designHeight/2;
-            layer.addChild(ground);
+            moleUpY = screenHeight * 9 / 20;
+            moleDownY = screenHeight * 3 / 4;
+            scoreY = screenHeight * 3 / 10;
 
-            var top = CCSprite.createFromFile("assets/foreground/grass_upper.png");
-            top.x = layer.designWidth/2;
-            top.y = layer.designHeight/2;
-            top.setAnchorPoint(new CCPoint(0.5,0));
-            top.setScale(0.5);
-            layer.addChild(top);
+            missY = screenHeight * 4 / 10;
 
-            var mole1 = CCSprite.createFromFile("assets/sprites/mole_1.png");
-            mole1.x = 65;
-            mole1.y = 85;
-            mole1.setScale(0.5);
-            layer.addChild(mole1);
-            mole1.onTouchBegan = function() {
-                whackMole(mole1);
+            var ground = new Image(Texture.fromAsset("assets/background/bg_dirt.png"));
+            ground.x = 0;
+            ground.y = 0;
+            ground.touchable = false;
+            stage.addChild(ground);
+
+            var top = new Image(Texture.fromAsset("assets/foreground/grass_upper.png"));
+            top.x = 0;
+            top.y = 0;
+            top.height = screenHeight / 2;
+            top.width = screenWidth;
+            top.touchable = false;
+            stage.addChild(top);
+
+            moles = new Vector.<Image>();
+
+            for (var mole_id = 0; mole_id < 3; mole_id++)
+            {
+                var mole = new Image(Texture.fromAsset("assets/sprites/mole_" + (mole_id + 1) + ".png"));
+                mole.x = screenWidth * (2 + (mole_id * 3))/ 10;
+                mole.y = moleDownY;
+                mole.center();
+                mole.scale = 0.5;
+                stage.addChild(mole);
+
+                mole.addEventListener(TouchEvent.TOUCH, function(e:TouchEvent) { 
+                    if (e.getTouch(mole, TouchPhase.BEGAN)) {                    
+                        whackMole(e, mole); 
+                    }
+                });            
+
+                moles.push(mole);
             }
 
-            var mole2 = CCSprite.createFromFile("assets/sprites/mole_2.png");
-            mole2.x = 240;
-            mole2.y = 85;
-            mole2.setScale(0.5);
-            layer.addChild(mole2);
-            mole2.onTouchBegan = function() {
-                whackMole(mole2);
-            }
-
-            var mole3 = CCSprite.createFromFile("assets/sprites/mole_3.png");
-            mole3.x = 410;
-            mole3.y = 85;
-            mole3.setScale(0.5);
-            layer.addChild(mole3);
-            mole3.onTouchBegan = function() {
-                whackMole(mole3);
-            }
-
-            moles = [mole1, mole2, mole3];
             moleStates = [false, false, false];
 
-            var bottom = CCSprite.createFromFile("assets/foreground/grass_lower.png");
-            bottom.x = layer.designWidth/2;
-            bottom.y = layer.designHeight/2;
-            bottom.setAnchorPoint(new CCPoint(0.5,1));
-            bottom.setScale(0.5); 
-            layer.addChild(bottom);
+            var bottom = new Image(Texture.fromAsset("assets/foreground/grass_lower.png"));
+            bottom.x = 0;
+            bottom.y = screenHeight / 2;
+            bottom.width = screenWidth;
+            bottom.height = screenHeight / 2;
+            bottom.touchable = false; 
+            stage.addChild(bottom);
 
             total = 0;
             totalScore = new Label("assets/fonts/Curse-hd.fnt");
             totalScore.text = "0";
-            totalScore.x = layer.designWidth/2;
-            totalScore.y = 80;
-            totalScore.scale = 0.75;
-            layer.addChild(totalScore);
+            totalScore.x = screenWidth/2;
+            totalScore.y = (screenHeight * 3 / 4);
+            totalScore.touchable = false;
+            totalScore.center();
+            totalScore.scale = 0.5;
+            stage.addChild(totalScore);
 
-            retryButton = CCSprite.createFromFile("assets/labels/gameover.png");
-            retryButton.retain();
-            retryButton.x = layer.designWidth/2;
-            retryButton.y = 250;
-            retryButton.scale = 0.5;
-            retryButton.onTouchEnded = resetGame;
+            gameOverLabel = new Image(Texture.fromAsset("assets/labels/gameover.png"));
+            gameOverLabel.x = screenWidth / 2;
+            gameOverLabel.y = screenHeight / 4;
+            gameOverLabel.center();
+            gameOverLabel.scale = 0.5;
+
+            gameOverLabel.addEventListener(TouchEvent.TOUCH, function(e:TouchEvent) { 
+                if (e.getTouch(gameOverLabel, TouchPhase.BEGAN))
+                {
+                    resetGame();
+                    e.stopImmediatePropagation();
+                }
+            });
 
             timeLabel = new Label("assets/fonts/Curse-hd.fnt");
             timeLabel.text = "30";
-            timeLabel.x = 445;
-            timeLabel.y = 295;
+            timeLabel.x = screenWidth - timeLabel.size.x;
+            timeLabel.y = 16;
             timeLabel.scale = 0.5;
-            layer.addChild(timeLabel);
+            timeLabel.touchable = false;
+            stage.addChild(timeLabel);
 
-            gameTimer = new Timer(30000);
+            gameTimer = new Timer(GAME_TIME_SECS * 1000);
             gameTimer.onComplete = endGame;
             gameTimer.start();
 
-            timer = new Timer(1000);
+            gameTimer.onComplete = endGame;
+            gameTimer.start();
+
+            timer = new Timer(INITIAL_TIMER_PERIOD);
             timer.onComplete = onTimerComplete;
             timer.start();
 
-            //Cocos2D.toggleFullscreen();
+            //stage.addEventListener( TouchEvent.TOUCH, function(e:TouchEvent) { 
+            // 
+            //    var touch = e.getTouch(stage, TouchPhase.BEGAN);
+            //
+            //    if (!touch)
+            //        return;                
+            //
+            //    onMiss(touch.globalX, touch.globalY);
+            //        
+            //});            
 
-            layer.onTouchBegan = onMiss;
-
-            // Enable keyboard/keypad callbacks and register ours.
-            layer.setKeypadEnabled(true);
-            layer.onKeyDown += handleKeyDown;
+            // Register keyboard handler.
+            stage.addEventListener(KeyboardEvent.KEY_DOWN, keyDownHandler);
 
             createScoreLabels();
+
+            // Switch to fullscreen mode.
+            Cocos2D.toggleFullscreen();
         }
 
-        protected function handleKeyDown(keycode:int):void
-        {
+        protected function keyDownHandler(event:KeyboardEvent):void
+        {   
+            var keycode = event.keyCode;
+
             if (keycode == LoomKey.A) {
-                whackMole(moles[0]);
+                whackMole(null, moles[0]);
             }
             
             if (keycode == LoomKey.S) {
-                whackMole(moles[1]);            
+                whackMole(null, moles[1]);            
             }
             
             if (keycode == LoomKey.D) {
-                whackMole(moles[2]);            
+                whackMole(null, moles[2]);            
             }
             
             if(keycode == LoomKey.SPACEBAR) {
@@ -185,28 +233,36 @@ package
 
         protected function createScoreLabels()
         {
-            // create a pool a score labels to pull from
+            // create a pool of score labels to pull from
             scores = new Vector.<Label>();
             misses = new Vector.<Label>();
-            for (var i = 0; i<4; i++) {
+            for (var i = 0; i < 4; i++)
+            {
                 var score = new Label("assets/fonts/Curse-hd.fnt");
                 score.text = "+100";
-                score.scale = 0.5;
-                score.y = 400;
+                score.x = -100;
+                score.y = stage.stageHeight * 2 / 5;
+                score.touchable = false;
+                score.center();
+
                 scores.push(score);
-                layer.addChild(score);
+                stage.addChild(score);
 
                 var miss = new Label("assets/fonts/Red-hd.fnt");
                 miss.text = "miss";
-                miss.y = 400;
+                miss.x = -100;
+                miss.y = stage.stageHeight * 2 / 5;
+                miss.center();
+                miss.touchable = false;
                 misses.push(miss);
-                layer.addChild(miss);
+                stage.addChild(miss);
             }
         }
 
         protected function getAvailableScoreLabel():Label
         {
-            for (var i = 0; i < scores.length; i++) {
+            for (var i = 0; i < scores.length; i++)
+            {
                 var score = scores[i];
                 if (!Tween.isTweening(score))
                     return score;
@@ -233,20 +289,24 @@ package
 
         protected function onTimerComplete(timer:Timer)
         {
-            for (var i = 0; i<moles.length; i++)
+            for (var i = 0; i < moles.length; i++)
             {
+                var mole = moles[i];
+                
+                if (!Tween.isTweening(mole) && (mole.y == moleDownY)) {
+                    moleStates[i] = false;
+                }
+
                 if (Math.floor(Math.random() * 4) == 0)
                 {
-                    var mole = moles[i];
-
-                    if (moleStates[i] == true) {
-                        moleStates[i] = false;
-                        //mole.setTextureFile("assets/sprites/mole_1.png");
-                    }
+                    //if (moleStates[i] == true) {
+                    //    moleStates[i] = false;
+                    //    //mole.source = "assets/sprites/mole_1.png";
+                    //}
 
                     if (!Tween.isTweening(mole)) {
-                        Tween.to(mole, 0.5, {"y": 75+mole.getContentSize().height/2, "ease": EaseType.EASE_OUT});
-                        Tween.to(mole, 0.3, {"y": 75, "ease": EaseType.EASE_OUT, "delay": 0.5+waitTime});
+                        Tween.to(mole, 0.5, {"y": moleUpY, "ease": EaseType.EASE_OUT});
+                        Tween.to(mole, 0.3, {"y": moleDownY, "ease": EaseType.EASE_OUT, "delay": 0.5+waitTime});
                     }
                 }
             }
@@ -255,25 +315,38 @@ package
             timer.start();
         }
 
-        protected function whackMole(mole:CCSprite)
+        protected function whackMole(e:TouchEvent, mole:Image)
         {
-            if (strikes == 3) 
-                return;
- 
+            //if (strikes == 3)
+            //{
+            //    return;
+            //}
+
             var index = moles.indexOf(mole);
-            if (moleStates[index] == false && (mole.y > 90)) {
+            if (moleStates[index] == false && (mole.y < (moleDownY - 10)))
+            {
                 onHit(index);
             }
             else
             {
-                onMiss(index, mole.x, 200);
+                onMiss(index);
+            }
+
+            // stop the event propagating to the miss handler
+            if (e != null)
+            {
+                e.stopImmediatePropagation();
             }
         }
 
         protected function updateTotal(points:Number)
         {
             total += points;
-            totalScore.text = total.toString();        
+            totalScore.text = total.toString();       
+            totalScore.x = stage.stageWidth / 2 - ((totalScore.width / 2) * totalScore.scale);
+
+            //totalScore.center();
+            //totalScore.scale = 0.5;
         }
 
         protected function onHit(index:Number)
@@ -292,22 +365,25 @@ package
             // animate a score
             var score = getAvailableScoreLabel();
             score.x = mole.x;
-            score.y = 275;
-            score.scale = 0;
+            score.y = scoreY;
+            score.scale = 0.8;
 
             updateTotal(HIT_POINTS);
 
-            Tween.to(score, 0.3, {"scale": 0.5, "ease": EaseType.EASE_OUT_BACK})
-            Tween.to(score, 0.3, {"y": 400, "ease": EaseType.EASE_IN_BACK, "delay": 0.3});
-
+            Tween.to(score, 0.3, {"scaleX": 0.5, "ease": EaseType.EASE_OUT_BACK})
+            Tween.to(score, 0.3, {"scaleY": 0.5, "ease": EaseType.EASE_OUT_BACK})
+            Tween.to(score, 0.3, {"y": -100, "ease": EaseType.EASE_IN_BACK, "delay": 0.3});
             Tween.killTweensOf(mole);
             //mole.setTextureFile("assets/sprites/mole_thump4.png");
-            Tween.to(mole, 0.3, {"y": 85, "ease": EaseType.EASE_OUT, "delay": 0.1}).onComplete;
+            Tween.to(mole, 0.3, {"y": moleDownY, "ease": EaseType.EASE_OUT, "delay": 0.1}).onComplete;
         }
 
-        protected function onMiss(index:Number, x:Number, y:Number)
+        protected function onMiss(index:Number)
         {
-            if (strikes == MAX_STRIKES) {
+            var mole = moles[index];
+
+            if (strikes == MAX_STRIKES)
+            {
                 return;
             }
             
@@ -319,12 +395,13 @@ package
             updateTotal(-MISS_POINTS);
 
             var miss = getAvailableMissLabel();
-            miss.x = x;
-            miss.y = y;
+            miss.x = mole.x;
+            miss.y = missY;
             miss.scale = 0;
 
-            Tween.to(miss, 0.3, {"scale": 0.5, "ease": EaseType.EASE_OUT_BACK})
-            Tween.to(miss, 0.3, {"y": 400, "ease": EaseType.EASE_IN_BACK, "delay": 0.3});
+            Tween.to(miss, 0.3, {"scaleX": 0.5, "ease": EaseType.EASE_OUT_BACK})
+            Tween.to(miss, 0.3, {"scaleY": 0.5, "ease": EaseType.EASE_OUT_BACK})
+            Tween.to(miss, 0.3, {"y": -100, "ease": EaseType.EASE_IN_BACK, "delay": 0.3});
 
             if (strikes == MAX_STRIKES) {
                 endGame();
@@ -337,26 +414,29 @@ package
             timer.stop();
             gameTimer.stop();
 
-            if (timeLabel.getParent() != null) {
-                layer.removeChild(timeLabel);            
-            }
+            //if (timeLabel.getParent() != null) {
+            //    stage.removeChild(timeLabel);            
+            //}
+            stage.removeChild(timeLabel);            
 
-            if (retryButton.getParent() == null) {
-                layer.addChild(retryButton);            
-            }
+            //if (gameOverLabel.getParent() == null) {
+            //    stage.addChild(gameOverLabel);            
+            //}
+            stage.addChild(gameOverLabel);            
         }
 
         protected function resetGame()
         {
-            layer.addChild(timeLabel);
+            stage.addChild(timeLabel);
             strikes = 0;
             total = 0;
-            totalScore.text = "0";
+            updateTotal(0);
+
             timer.start();
             gameTimer.start();
-            layer.removeChild(retryButton);
-            waitTime = 0.5;
-            timer.delay = 1000;
+            stage.removeChild(gameOverLabel);
+            waitTime = INITIAL_MOLE_UP_TIME;
+            timer.delay = INITIAL_TIMER_PERIOD;
         }
     }
 }
