@@ -2,12 +2,12 @@ package
 {
     import loom.Application;    
     import loom.platform.Timer;
-    import loom.animation.Tween;
-    import loom.animation.EaseType;
+    import loom.animation.LoomTween;
+    import loom.animation.LoomEaseType;
     import loom2d.display.StageScaleMode;
     import loom2d.display.Image;        
     import loom2d.textures.Texture;
-    import loom2d.ui.Label;
+    import loom2d.ui.SimpleLabel;
     import loom2d.events.KeyboardEvent;
     import loom.platform.LoomKey;
     import cocos2d.Cocos2D;
@@ -46,14 +46,14 @@ package
         protected var timer:Timer;
         protected var moles:Vector.<Image>;
         protected var moleStates:Vector.<Boolean>;
-        protected var scores:Vector.<Label>;
-        protected var misses:Vector.<Label>;
+        protected var scores:Vector.<SimpleLabel>;
+        protected var misses:Vector.<SimpleLabel>;
         protected var waitTime:Number;
-        protected var totalScore:Label;
+        protected var totalScore:SimpleLabel;
         protected var total:Number;
         protected var strikes:Number;
         protected var gameOverLabel:Image;
-        protected var timeLabel:Label;
+        protected var timeLabel:SimpleLabel;
         protected var gameTimer:Timer;
         protected var timeLastHealthWarning:Number;
         protected var moleUpY:Number;
@@ -123,7 +123,7 @@ package
             stage.addChild(bottom);
 
             total = 0;
-            totalScore = new Label("assets/fonts/Curse-hd.fnt");
+            totalScore = new SimpleLabel("assets/fonts/Curse-hd.fnt");
             totalScore.text = "0";
             totalScore.x = screenWidth/2;
             totalScore.y = (screenHeight * 3 / 4);
@@ -146,7 +146,7 @@ package
                 }
             });
 
-            timeLabel = new Label("assets/fonts/Curse-hd.fnt");
+            timeLabel = new SimpleLabel("assets/fonts/Curse-hd.fnt");
             timeLabel.text = "30";
             timeLabel.x = screenWidth - timeLabel.size.x;
             timeLabel.y = 16;
@@ -234,11 +234,11 @@ package
         protected function createScoreLabels()
         {
             // create a pool of score labels to pull from
-            scores = new Vector.<Label>();
-            misses = new Vector.<Label>();
+            scores = new Vector.<SimpleLabel>();
+            misses = new Vector.<SimpleLabel>();
             for (var i = 0; i < 4; i++)
             {
-                var score = new Label("assets/fonts/Curse-hd.fnt");
+                var score = new SimpleLabel("assets/fonts/Curse-hd.fnt");
                 score.text = "+100";
                 score.x = -100;
                 score.y = stage.stageHeight * 2 / 5;
@@ -248,7 +248,7 @@ package
                 scores.push(score);
                 stage.addChild(score);
 
-                var miss = new Label("assets/fonts/Red-hd.fnt");
+                var miss = new SimpleLabel("assets/fonts/Red-hd.fnt");
                 miss.text = "miss";
                 miss.x = -100;
                 miss.y = stage.stageHeight * 2 / 5;
@@ -259,31 +259,31 @@ package
             }
         }
 
-        protected function getAvailableScoreLabel():Label
+        protected function getAvailableScoreLabel():SimpleLabel
         {
             for (var i = 0; i < scores.length; i++)
             {
                 var score = scores[i];
-                if (!Tween.isTweening(score))
+                if (!LoomTween.isTweening(score))
                     return score;
             }
 
             // default, return the first one
-            Tween.killTweensOf(scores[0]);
+            LoomTween.killTweensOf(scores[0]);
             return scores[0];
         }
 
-        protected function getAvailableMissLabel():Label
+        protected function getAvailableMissLabel():SimpleLabel
         {
             for (var i = 0; i < misses.length; i++) {
                 var miss = misses[i];
-                if (!Tween.isTweening(miss)) {
+                if (!LoomTween.isTweening(miss)) {
                     return miss;
                 }
             }
 
             // default, return the first one
-            Tween.killTweensOf(misses[0]);
+            LoomTween.killTweensOf(misses[0]);
             return misses[0];
         }
 
@@ -293,7 +293,7 @@ package
             {
                 var mole = moles[i];
                 
-                if (!Tween.isTweening(mole) && (mole.y == moleDownY)) {
+                if (!LoomTween.isTweening(mole) && (mole.y == moleDownY)) {
                     moleStates[i] = false;
                 }
 
@@ -304,9 +304,9 @@ package
                     //    //mole.source = "assets/sprites/mole_1.png";
                     //}
 
-                    if (!Tween.isTweening(mole)) {
-                        Tween.to(mole, 0.5, {"y": moleUpY, "ease": EaseType.EASE_OUT});
-                        Tween.to(mole, 0.3, {"y": moleDownY, "ease": EaseType.EASE_OUT, "delay": 0.5+waitTime});
+                    if (!LoomTween.isTweening(mole)) {
+                        LoomTween.to(mole, 0.5, {"y": moleUpY, "ease": LoomEaseType.EASE_OUT});
+                        LoomTween.to(mole, 0.3, {"y": moleDownY, "ease": LoomEaseType.EASE_OUT, "delay": 0.5+waitTime});
                     }
                 }
             }
@@ -370,12 +370,12 @@ package
 
             updateTotal(HIT_POINTS);
 
-            Tween.to(score, 0.3, {"scaleX": 0.5, "ease": EaseType.EASE_OUT_BACK})
-            Tween.to(score, 0.3, {"scaleY": 0.5, "ease": EaseType.EASE_OUT_BACK})
-            Tween.to(score, 0.3, {"y": -100, "ease": EaseType.EASE_IN_BACK, "delay": 0.3});
-            Tween.killTweensOf(mole);
+            LoomTween.to(score, 0.3, {"scaleX": 0.5, "ease": LoomEaseType.EASE_OUT_BACK})
+            LoomTween.to(score, 0.3, {"scaleY": 0.5, "ease": LoomEaseType.EASE_OUT_BACK})
+            LoomTween.to(score, 0.3, {"y": -100, "ease": LoomEaseType.EASE_IN_BACK, "delay": 0.3});
+            LoomTween.killTweensOf(mole);
             //mole.setTextureFile("assets/sprites/mole_thump4.png");
-            Tween.to(mole, 0.3, {"y": moleDownY, "ease": EaseType.EASE_OUT, "delay": 0.1}).onComplete;
+            LoomTween.to(mole, 0.3, {"y": moleDownY, "ease": LoomEaseType.EASE_OUT, "delay": 0.1}).onComplete;
         }
 
         protected function onMiss(index:Number)
@@ -399,9 +399,9 @@ package
             miss.y = missY;
             miss.scale = 0;
 
-            Tween.to(miss, 0.3, {"scaleX": 0.5, "ease": EaseType.EASE_OUT_BACK})
-            Tween.to(miss, 0.3, {"scaleY": 0.5, "ease": EaseType.EASE_OUT_BACK})
-            Tween.to(miss, 0.3, {"y": -100, "ease": EaseType.EASE_IN_BACK, "delay": 0.3});
+            LoomTween.to(miss, 0.3, {"scaleX": 0.5, "ease": LoomEaseType.EASE_OUT_BACK})
+            LoomTween.to(miss, 0.3, {"scaleY": 0.5, "ease": LoomEaseType.EASE_OUT_BACK})
+            LoomTween.to(miss, 0.3, {"y": -100, "ease": LoomEaseType.EASE_IN_BACK, "delay": 0.3});
 
             if (strikes == MAX_STRIKES) {
                 endGame();
