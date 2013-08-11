@@ -1,3 +1,10 @@
+//
+// Whack-A-Potato
+//
+// Loom Game Engine Whack-A-Mole demo modified to work with Makey Makey.
+//
+// http://bluntbody.com/whack-a-potato/
+
 package
 {
     import loom.Application;    
@@ -165,17 +172,6 @@ package
             timer.onComplete = onTimerComplete;
             timer.start();
 
-            //stage.addEventListener( TouchEvent.TOUCH, function(e:TouchEvent) { 
-            // 
-            //    var touch = e.getTouch(stage, TouchPhase.BEGAN);
-            //
-            //    if (!touch)
-            //        return;                
-            //
-            //    onMiss(touch.globalX, touch.globalY);
-            //        
-            //});            
-
             // Register keyboard handler.
             stage.addEventListener(KeyboardEvent.KEY_DOWN, keyDownHandler);
 
@@ -223,6 +219,7 @@ package
             // Health check...
             var strikesLeft = MAX_STRIKES - strikes;
 
+            // Play warning sound during the last 5 seconds
             if ((timeLeftSecs < 5) || (strikesLeft <= 1)) {
                 if (timeLeftSecs != timeLastHealthWarning) {
                     SimpleAudioEngine.sharedEngine().playEffect("assets/sounds/health.wav");
@@ -297,13 +294,9 @@ package
                     moleStates[i] = false;
                 }
 
+                // Randomly start popping up mole
                 if (Math.floor(Math.random() * 4) == 0)
                 {
-                    //if (moleStates[i] == true) {
-                    //    moleStates[i] = false;
-                    //    //mole.source = "assets/sprites/mole_1.png";
-                    //}
-
                     if (!LoomTween.isTweening(mole)) {
                         LoomTween.to(mole, 0.5, {"y": moleUpY, "ease": LoomEaseType.EASE_OUT});
                         LoomTween.to(mole, 0.3, {"y": moleDownY, "ease": LoomEaseType.EASE_OUT, "delay": 0.5+waitTime});
@@ -344,9 +337,6 @@ package
             total += points;
             totalScore.text = total.toString();       
             totalScore.x = stage.stageWidth / 2 - ((totalScore.width / 2) * totalScore.scale);
-
-            //totalScore.center();
-            //totalScore.scale = 0.5;
         }
 
         protected function onHit(index:Number)
@@ -374,7 +364,6 @@ package
             LoomTween.to(score, 0.3, {"scaleY": 0.5, "ease": LoomEaseType.EASE_OUT_BACK})
             LoomTween.to(score, 0.3, {"y": -100, "ease": LoomEaseType.EASE_IN_BACK, "delay": 0.3});
             LoomTween.killTweensOf(mole);
-            //mole.setTextureFile("assets/sprites/mole_thump4.png");
             LoomTween.to(mole, 0.3, {"y": moleDownY, "ease": LoomEaseType.EASE_OUT, "delay": 0.1}).onComplete;
         }
 
@@ -403,7 +392,8 @@ package
             LoomTween.to(miss, 0.3, {"scaleY": 0.5, "ease": LoomEaseType.EASE_OUT_BACK})
             LoomTween.to(miss, 0.3, {"y": -100, "ease": LoomEaseType.EASE_IN_BACK, "delay": 0.3});
 
-            if (strikes == MAX_STRIKES) {
+            if (strikes == MAX_STRIKES)
+            {
                 endGame();
             }
         }
@@ -414,14 +404,7 @@ package
             timer.stop();
             gameTimer.stop();
 
-            //if (timeLabel.getParent() != null) {
-            //    stage.removeChild(timeLabel);            
-            //}
-            stage.removeChild(timeLabel);            
-
-            //if (gameOverLabel.getParent() == null) {
-            //    stage.addChild(gameOverLabel);            
-            //}
+            stage.removeChild(timeLabel);
             stage.addChild(gameOverLabel);            
         }
 
