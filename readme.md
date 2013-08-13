@@ -17,8 +17,6 @@ Main modifications:
 * Replaced "Retry" label with "Game Over"
 * Cleaned up directory structure
 
-Note that keyboard support was not in the initial Loom release.  If Loom complains about missing keyboard functions then update your SDK (I am currently on Sprint29).
-
 To connect up MaKey MaKey, just plug potatoes into the A, S, D connections on the rear of the board.
 You need a connection to earth before you start whacking - I find holding a banana wired to earth works well.
 
