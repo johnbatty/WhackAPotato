@@ -207,13 +207,13 @@ package
             }
 
             if (keycode == LoomKey.ESCAPE) {
-                Process.exit(0)
+                Process.exit(0);
             }
         }
 
         override public function onTick()
         {
-            var timeLeftSecs = GAME_TIME_SECS - Math.round(gameTimer.elapsed/1000)
+            var timeLeftSecs = GAME_TIME_SECS - Math.round(gameTimer.elapsed/1000);
             timeLabel.text = timeLeftSecs.toString();
 
             // Health check...
@@ -360,8 +360,8 @@ package
 
             updateTotal(HIT_POINTS);
 
-            LoomTween.to(score, 0.3, {"scaleX": 0.5, "ease": LoomEaseType.EASE_OUT_BACK})
-            LoomTween.to(score, 0.3, {"scaleY": 0.5, "ease": LoomEaseType.EASE_OUT_BACK})
+            LoomTween.to(score, 0.3, {"scaleX": 0.5, "ease": LoomEaseType.EASE_OUT_BACK});
+            LoomTween.to(score, 0.3, {"scaleY": 0.5, "ease": LoomEaseType.EASE_OUT_BACK});
             LoomTween.to(score, 0.3, {"y": -100, "ease": LoomEaseType.EASE_IN_BACK, "delay": 0.3});
             LoomTween.killTweensOf(mole);
             LoomTween.to(mole, 0.3, {"y": moleDownY, "ease": LoomEaseType.EASE_OUT, "delay": 0.1}).onComplete;
@@ -388,8 +388,8 @@ package
             miss.y = missY;
             miss.scale = 0;
 
-            LoomTween.to(miss, 0.3, {"scaleX": 0.5, "ease": LoomEaseType.EASE_OUT_BACK})
-            LoomTween.to(miss, 0.3, {"scaleY": 0.5, "ease": LoomEaseType.EASE_OUT_BACK})
+            LoomTween.to(miss, 0.3, {"scaleX": 0.5, "ease": LoomEaseType.EASE_OUT_BACK});
+            LoomTween.to(miss, 0.3, {"scaleY": 0.5, "ease": LoomEaseType.EASE_OUT_BACK});
             LoomTween.to(miss, 0.3, {"y": -100, "ease": LoomEaseType.EASE_IN_BACK, "delay": 0.3});
 
             if (strikes == MAX_STRIKES)
